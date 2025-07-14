@@ -1,6 +1,6 @@
 # Crestron SIMPL# Multi-Processor Proof of Concept 
 
-![LIT Home Architecture](Assets/b731c4ee-659f-4445-b84f-6afc89977d5b.png)
+![LIT Home Architecture](/Assets/b731c4ee-659f-4445-b84f-6afc89977d5b.png)
 
 [![Status](https://img.shields.io/badge/status-proof--of--concept-blueviolet)](https://shields.io/)
 [![Crestron 4-Series](https://img.shields.io/badge/platform-Crestron%204--Series-yellowgreen)](https://www.crestron.com/Products/Control-Hardware-Software/Hardware/Control-Systems)
