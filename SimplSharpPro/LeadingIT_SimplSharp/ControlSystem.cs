@@ -4,6 +4,9 @@ using Crestron.SimplSharpPro;
 using Crestron.SimplSharpPro.CrestronThread;
 using Crestron.SimplSharpPro.UI;
 using System;
+using Newtonsoft.Json;
+using System.Collections.Generic;
+using System.IO;
 
 namespace LeadingIT_SimplSharp
 {
@@ -12,6 +15,9 @@ namespace LeadingIT_SimplSharp
         private Contract uiContract;
         private XpanelForSmartGraphics xpanel;
         private XpanelForSmartGraphics xpanel1;
+        private WebSocketServer wsServer;
+        private List<string> clickedWidgets = new List<string>();
+        private readonly string clickedWidgetsPath = @"\NVRAM\clicked_widgets.json";
 
         public ControlSystem() : base()
         {
@@ -55,6 +61,7 @@ namespace LeadingIT_SimplSharp
 
                 SetActivePage();
                 uiContract.HomePage.QA_3_Trigger += HomePage_QA_3_Trigger;
+                LoadClickedWidgets();
 
                 CrestronConsole.PrintLine("System initialized.");
             }
@@ -75,6 +82,7 @@ namespace LeadingIT_SimplSharp
         private void Footer_UI_BootUp(object sender, UIEventArgs e)
         {
             SelectHomePage();
+            AddWidgetClick($"{DateTime.Now}: ClickEvent: footer boot up");
         }
 
         private void Footer_HomePage_IsSelected(object sender, UIEventArgs e)
@@ -98,12 +106,65 @@ namespace LeadingIT_SimplSharp
             SelectMorePage();
         }
 
+       
+        private void AddWidgetClick(string widgetName)
+        {
+            if (!clickedWidgets.Contains(widgetName))
+            {
+                clickedWidgets.Add(widgetName);
+                SaveClickedWidgets();
+            }
+        }
+
+        private void SaveClickedWidgets()
+        {
+            try
+            {
+                var json = JsonConvert.SerializeObject(clickedWidgets, Formatting.Indented);
+                File.WriteAllText(clickedWidgetsPath, json);
+            }
+            catch (Exception ex)
+            {
+                ErrorLog.Error("Error saving clicked widgets: " + ex.Message);
+            }
+        }
+
+        private void LoadClickedWidgets()
+        {
+            try
+            {
+                if (File.Exists(clickedWidgetsPath))
+                {
+                    var json = File.ReadAllText(clickedWidgetsPath);
+                    clickedWidgets = JsonConvert.DeserializeObject<List<string>>(json);
+                }
+            }
+            catch (Exception ex)
+            {
+                ErrorLog.Error("Error loading clicked widgets: " + ex.Message);
+            }
+        }
+        private void PrintClickedWidgets()
+        {
+            try
+            {
+                string json = File.ReadAllText(clickedWidgetsPath);
+                CrestronConsole.PrintLine(json);
+            }
+            catch (Exception ex)
+            {
+                CrestronConsole.PrintLine("Error reading clicked_widgets.json: " + ex.Message);
+            }
+        }
+
         private void SelectHomePage()
         {
             uiContract.Footer.HomePage_IsSelected((sig, _) => sig.BoolValue = true);
             uiContract.Footer.MainPage_IsSelected((sig, _) => sig.BoolValue = true);
             HomePage_Settings();
+            AddWidgetClick($"{DateTime.Now}: ClickEvent: Home Page is Selected");
         }
+
 
         private void DeselectHomePage()
         {
@@ -117,12 +178,17 @@ namespace LeadingIT_SimplSharp
             uiContract.HomePage.Show_QuickActions((sig, _) => sig.BoolValue = false);
             uiContract.HomePage.Show_Time((sig, _) => sig.BoolValue = false);
             uiContract.HomePage.Show_WeatherWidget((sig, _) => sig.BoolValue = false);
+
+            AddWidgetClick($"{DateTime.Now}: ClickEvent: Deselect Homne page");
         }
 
         private void SelectRoomsPage()
         {
             uiContract.Footer.RoomsPage_IsSelected((sig, _) => sig.BoolValue = true);
             RoomPage_Settings();
+
+
+            AddWidgetClick($"{DateTime.Now}: ClickEvent: Select room page");
         }
 
         private void DeselectRoomsPage()
@@ -139,12 +205,15 @@ namespace LeadingIT_SimplSharp
             uiContract.RoomsPage.Show_CinemaWidget((sig, _) => sig.BoolValue = false);
             uiContract.RoomsPage.Show_SchedulerWidget((sig, _) => sig.BoolValue = false);
             uiContract.RoomsPage.Show_ExhaustFanWidget((sig, _) => sig.BoolValue = false);
+
+            AddWidgetClick($"{DateTime.Now}: ClickEvent: Deselect room page");
         }
 
         private void SelectMorePage()
         {
             uiContract.Footer.MorePage_IsSelected((sig, _) => sig.BoolValue = true);
             MorePage_Settings();
+            AddWidgetClick($"{DateTime.Now}: ClickEvent: Select more page");
         }
 
         private void DeselectMorePage()
@@ -157,11 +226,14 @@ namespace LeadingIT_SimplSharp
             uiContract.MorePage.AutoTheme_Enable_FB((sig, _) => sig.BoolValue = false);
             uiContract.MorePage.Show_KeypadsBacklight((sig, _) => sig.BoolValue = false);
             uiContract.MorePage.Show_FullScreenMode_Btn((sig, _) => sig.BoolValue = false);
+
+            AddWidgetClick($"{DateTime.Now}: ClickEvent: Deselect more page");
         }
 
         private void HomePage_QA_3_Trigger(object sender, UIEventArgs e)
         {
             uiContract.HomePage.QA_3_Trigger_FB((sig, _) => sig.BoolValue = true);
+            AddWidgetClick($"{DateTime.Now}: ClickEvent: QA_3_Trigger");
         }
 
         private void HomePage_Settings()
@@ -243,11 +315,12 @@ namespace LeadingIT_SimplSharp
                     //The program has been resumed. Resume all the user threads/timers as needed.
                     break;
                 case (eProgramStatusEventType.Stopping):
-                    //The program has been stopped.
-                    //Close all threads. 
-                    //Shutdown all Client/Servers in the system.
-                    //General cleanup.
-                    //Unsubscribe to all System Monitor events
+                    if (wsServer != null)
+                    {
+                        wsServer.Stop();
+                        wsServer = null;
+                        CrestronConsole.PrintLine("[WS] WebSocket server stopped.");
+                    }
                     break;
             }
         }
