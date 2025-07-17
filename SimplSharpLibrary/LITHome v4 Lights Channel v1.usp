@@ -36,13 +36,13 @@ Comments:
 /*******************************************************************************************
   DIGITAL, ANALOG and SERIAL INPUTS and OUTPUTS
 *******************************************************************************************/
-DIGITAL_INPUT Toggle, Set_On, Set_Off;
+DIGITAL_INPUT _SKIP_, _SKIP_,_SKIP_,Toggle, Set_On, Set_Off;
 ANALOG_INPUT Channel_Level_Set;
 // STRING_INPUT 
 // BUFFER_INPUT 
 
-DIGITAL_OUTPUT Is_On, Is_Off;
-ANALOG_OUTPUT Channel_Level_fb;
+DIGITAL_OUTPUT _SKIP_,_SKIP_,_SKIP_,Is_On, Is_Off;
+ANALOG_OUTPUT _SKIP_,Channel_Level_fb;
 // STRING_OUTPUT 
 
 /*******************************************************************************************
@@ -142,9 +142,11 @@ PUSH Toggle
 
 
 /*
-RELEASE input
+RELEASE Toggle
 {
-    // TODO:  Add code here
+    integer Is_On_value;
+    Is_On_value = Is_On;
+    LightsChannelV1_Obj.TogglePressed(Is_On_value);
 }
 */
 
@@ -175,3 +177,4 @@ FUNCTION Main()
 	RegisterEvent(LightsChannelV1_Obj,IntegerEvent,Channel_Level_fb_EventHandler);
 	// RegisterEvent(LightsChannelV1_Obj,StringEvent,StringEventHandler);
 }
+
