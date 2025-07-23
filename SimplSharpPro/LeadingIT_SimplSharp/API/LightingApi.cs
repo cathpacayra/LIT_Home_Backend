@@ -24,4 +24,8 @@ namespace LeadingIT_SimplSharp.API
             return _manager.GetCurrentLights();
         }
     }
+
+    public interface IRestController
+    {
+    }
 }
